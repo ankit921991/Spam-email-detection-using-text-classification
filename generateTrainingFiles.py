@@ -5,15 +5,11 @@ import re
 inputPath = sys.argv[1]
 outputPath = sys.argv[2]
 
-#inputPath = /home/ankit/Desktop/csci544-hw1/SPAM_training/
-#outputPath = "/home/ankit/Desktop/csci544-hw1/"
-
-
 # code to generate training files by replacing special characters by space
 
 pos = ""
 neg = ""
-outfile = ""
+#outfile = "final_sent_test.txt"
 
 for root, dirs, files in os.walk(inputPath, topdown=True):
     f = open (inputPath + files[0],'rU',errors = 'ignore')
@@ -27,11 +23,12 @@ for root, dirs, files in os.walk(inputPath, topdown=True):
         outfile = "sentiment_training.txt"
     break
     f.close()
-    
-
-
+ 
+head = ""   
+print(outputPath + outfile)
 fout = open(outputPath + outfile,"w")
 for root, dirs, files in os.walk(inputPath, topdown=True):
+    files = sorted(files)    
     for file in files:
         f = open(inputPath + file,'rU',errors = 'ignore')
         if pos in f.name:
@@ -43,14 +40,15 @@ for root, dirs, files in os.walk(inputPath, topdown=True):
         for i in range (len(fileLines)):
             str = str + re.sub("[\n]+"," ",fileLines[i])
         str = str.lower()
-        str = head + str    
-        lineSPR = re.sub('[\W_0-9]+',' ',str) # remove special characters
+        lineSPR = head + str    
+        #lineSPR = re.sub('[^a-zA-Z\s]+','',str) # remove special characters    
         #lineSPR = str        
         lineWS = re.sub('\s+',' ',lineSPR)#remove multiple spaces by single
         str1 = re.sub("\s$","",lineWS) #remove space at the end
         str1 = str1 + "\n"
         fout.write(str1)
-        f.close()
+    break
+    f.close()
     fout.close()
 
     

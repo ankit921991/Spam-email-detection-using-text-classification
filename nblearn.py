@@ -5,82 +5,104 @@ import sys
 inputPath = sys.argv[1]
 outputPath = sys.argv[2]
 
-#inputPath = "/home/ankit/Desktop/csci544-hw1/spam_training.txt"  
-#outputPath = "/home/ankit/Desktop/csci544-hw1/"
+classes = []  # to store all possible classes ex: HAm SPAm etc
 
-posC = 0.0
-pWordCount = 0.0
-negC = 0.0
-nWordCount = 0.0
-
+#to get the name of .nb file from the training file name
 f = open(inputPath,"r")
+trainingFileName = f.name
+words = trainingFileName.split("_")
+outfile = words[0]+".nb"
 lines = f.readlines()
-
-if "spam_training" in f.name:
-    pos = "HAM"
-    neg = "SPAM"
-    outfile = "spam.nb" 
-else :
-    pos = "POS"
-    neg = "NEG"
-    outfile = "sentiment.nb"
 f.close()
-# to calculte prio probabilities of SPAM and HAM class
+#-------------------------------------------------------
+
+#To get the names of all possible classes
 for line1 in lines:
     line = re.sub("[\n+]","",line1)
-    if pos+" " in line:
-        posC = posC + 1
-        hCount = (len(line.split(" "))-1)
-        pWordCount = pWordCount + hCount 
-    elif neg+" " in line:
-        negC = negC + 1
-        sCount = (len(line.split(" "))-1)
-        nWordCount = nWordCount + sCount 
+    words = line.split(" ")
+    if words[0] not in classes:
+        classes.append(words[0]) 
+#-------------------------------------------------------
 
-pspam = negC/(negC + posC)
-pham = posC/(posC + negC)
-#print("HAM " + str(pWordCount))
-#print("SPAM " + str(nWordCount))
-#print(str(nWordCount + pWordCount))
+classesLength = {}  # to store number of records for each class   
+classWordCount = {}  # to store word counts for each class
+totalclassCount = len(lines) # total number of records or lines
+totalCountDict = {}
+totalVocabularyLength = 0.0
 
-# calculted prior probabilities for SPAM and HAM class
+#to get vocabulary
+for line1 in lines:
+    line = re.sub("[\n+]","",line1)
+    line = re.sub("[\s+]"," ",line)
+    line = re.sub("\s$","",line)
+    line = line.lower()
+    words = line.split(" ")
+    for word in words:
+        if word not in words[0]:
+            if word not in totalCountDict:
+                #print(word + " ")
+                totalCountDict[word] = 1.0
+                
+totalVocabularyLength = len(totalCountDict)
 
-dictNeg = {}
-dictPos = {}
+#To get classesLength,classWordCount values
+for line1 in lines:
+    line = re.sub("[\n+]"," ",line1)
+    line = re.sub("[\s+]"," ",line)
+    line = re.sub("\s$","",line)
+    words = line.split(" ")
+    if words[0] not in classesLength:
+        classesLength[words[0]] = 1.0
+        classWCount = float(len(words)-1)
+        classWordCount[words[0]] = classWCount
+    else:
+        classesLength[words[0]] = classesLength[words[0]] + 1.0
+        classWCount = float(len(words)-1)
+        classWordCount[words[0]] = classWordCount[words[0]] + classWCount
+#---------------------------------------------
+
+probabilityOfClass = {} # to store probability of individual classes
+for word in classes:
+    probabilityOfClass[word] =  (classesLength[word]/totalclassCount)
+
+_dict = {"":{}} #to store words counts and word for each classes
+
+for word in classes:
+    #print(word + " -> " + str(probabilityOfClass[word]))
+    _dict[word] = {} 
+
+# to populate _dict
 for line in lines:
     lineWNL = re.sub("[\n+]","",line)
-    if neg+" " in lineWNL:
-        words = lineWNL.split(" ")
-        for word in words:
-            #if dictNeg.has_key(word):
-            if word in dictNeg :
-                dictNeg[word] = dictNeg[word] + 1.0
-            elif word != neg:
-                dictNeg[word] = 1
-    else :
-        words = lineWNL.split(" ")
-        for word in words:
-            #if dictPos.has_key(word):
-            if word in dictPos:
-                dictPos[word] = dictPos[word] + 1.0
-            elif word != pos:
-                dictPos[word] = 1.0
+    for _class in classes:    
+        if _class+" " in lineWNL:
+            words = lineWNL.split(" ")
+            for word in words :
+                if word in _dict[_class] and word not in classes:
+                    word = word.lower()
+                    _dict[_class][word] = _dict[_class][word] + 1.0
+                elif word != _dict[_class] and word not in classes:
+                    word = word.lower()
+                    _dict[_class][word] = 2.0
+        
+#----------------------------------------------------
 
-print(neg + " " + str(negC))
-print(pos + " " + str(posC))
-f = open(outputPath + outfile,"w")
-#f.write("SPAM_PROP " + str(math.log(nWordCount/(nWordCount + pWordCount))) + "\n")
-#f.write("HAM_PROP " + str(math.log(pWordCount/(nWordCount + pWordCount))) + "\n")
+f = open(outputPath,"w")
 
-f.write(neg + "_PROP " + str(negC) + "\n")
-f.write(pos + "_PROP " + str(posC) + "\n")
+for w in classes:
+    str1 = w+" "+str(classesLength[w])+" "+str(classWordCount[w])+","
+    f.write(str1)
+f.write("\n")
+f.write("totalVocabularyLength " + str(totalVocabularyLength))
+f.write("\n")
 
-for key, value in dictPos.items():
-    f.write(pos+ " " + key + " " + str(math.log(value/pWordCount)) + "\n")
 
-for key, value in dictNeg.items():
-    f.write(neg + " " + key + " " + str(math.log(value/nWordCount)) + "\n")
+for _class in classes:
+    for key, value in _dict[_class].items():
+        f.write(_class+ " " + key + " " + str(math.log(value/(classWordCount[_class]+totalVocabularyLength))) + "\n")
 f.close()
+
+#------------------------------------------------------
 
 
 
